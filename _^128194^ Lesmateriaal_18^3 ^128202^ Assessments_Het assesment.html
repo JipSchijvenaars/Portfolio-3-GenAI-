@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+  <link href="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/thirdpartylib/bootstrap-4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/thirdpartylib/fontawesome-free-5.9.0-web/css/all.min.css" rel="stylesheet"/>
+  <link href="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/css/styles.min.css" rel="stylesheet"/>
+  <link href="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/css/custom.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+   <meta data-id="_📂 Lesmateriaal_18: 📊 Assessments_Het assesment"/>
+   <style>
+    table {
+                width: 100%;         /* Take full width of container */
+                border-collapse: collapse;
+                table-layout: auto;  /* Allow columns to size based on content */
+            }
+
+            td, th {
+                padding: 8px;
+                border: 1px solid #ddd;
+                word-wrap: break-word;    /* Enable text wrapping */
+                word-break: break-word;   /* Break words if needed */
+                min-width: 50px;          /* Minimum column width */
+                max-width: none;          /* Allow expansion */
+                white-space: normal;      /* Enable wrapping, prevent ellipsis */
+                height: auto;             /* Allow height to adjust to content */
+                vertical-align: top;      /* Align content to top */
+            }
+
+            /* Styling for the header row */
+            th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+                border-bottom: 2px solid #ddd;
+            }
+   </style>
+   <title>
+    Het assesment
+   </title>
+  </link>
+ </head>
+ <body>
+  <div class="container-fluid">
+   <div class="row">
+    <div class="col-12 offset-md-1 col-md-10 offset-lg-2 col-lg-8">
+     <h1>
+      Het assesment
+     </h1>
+     <p>Sims is een populair levenssimulatiespel waarin spelers de controle hebben over de levens van virtuele mensen. In de game kunnen spelers huizen bouwen, relaties aangaan en verschillende lifestyles verkennen. Het spel biedt een open wereld waarin spelers hun creativiteit kunnen uiten en verhalen kunnen creëren.
+In deze opdracht gaan we Sims tot leven te brengen door LLM's te gebruiken om de Sims te laten reageren op de acties van de speler en de omgeving. Het vereist teveel programmeerwerk om een figuur uit een daadwerkelijke Sims game aan te sturen, dus bouwen we een eigen Sims-wereld.</p>
+<h2>De Sims-wereld</h2>
+<p>De Sims-wereld in de oorspronkelijke Sims game wordt heel mooi weergegeven in een 3D spel. We gaan deze wereld een heel stuk eenvoudiger maken:</p>
+<ul>
+<li>↔️ We gaan de Sims-wereld weergeven in een 2D grid (bijvoorbeeld van 15x15 vakjes). De ruimte is dus discreet: de Sims kunnen zich alleen verplaatsen naar de vakjes die er zijn. En elk vakje is leeg, gevuld met een object of bezet door een Sims.</li>
+<li>⌛ De tijd is ook discreet: de tijd gaat in stappen van 15 minuten. Elke actie duurt dus (een veelvoud van) 15 minuten.</li>
+<li>🎄 De Sims-wereld bestaat uit een aantal <strong>objecten</strong> die de speler kan gebruiken om de Sims te laten reageren. De objecten worden weergegeven in het 2D grid met emoji's.</li>
+<li>❤️ De Sims hebben bepaalde <strong>gevoelens</strong>, zoals gelukkig, verdrietig, boos, etc.</li>
+<li>🗣️ De Sims kunnen met elkaar <strong>communiceren</strong>.</li>
+<li>
+🤸‍♀️ De gevoelens kunnen veranderen door de <strong>acties</strong> van de Sims: bewegen, eten, slapen, dansen, etc.<ul>
+<li>Sommige acties worden uitgevoerd door de Sims, andere acties worden uitgevoerd door de speler. Dus de speler kan de Sims opdrachten geven, maar de Sims kunnen ook zelf beslissingen nemen.</li>
+<li>Voor sommige acties is het nodig objecten te gebruiken of met andere Sims te communiceren.</li>
+</ul>
+</li>
+<li>🗞️ Details over de specifieke Sims-wereld (het 'level') staan in informatie-bestanden die je zelf genereert/verzameld. Deze bestanden beschrijven een specifieke cultuur / fictieve wereld / periode in de geschiedenis. Deze databronnen bevatten bijvoorbeeld informatie over het klimaat, de gangbare omgangsvormen, belangrijke relevante gebeurtenissen, etc. Deze bestanden zijn nodig om RAG mee te oefenen.</li>
+<li>🔌De Sims-wereld staat helemaal op zichzelf op één enkel poortje naar de echte wereld na. Kies een leuke API endpoint die wordt aangeroepen door één van de LLM's. Bijvoorbeeld (kies dus iets anders): een API om het weer op te vragen en de keuzes van de Sims personages daarop aan te passen.
+Je bent zelf vrij om de Sims-wereld verder in te vullen. Je kunt zelf objecten, acties en gevoelens bedenken. Bedenk zelf hoe je LLM's wilt inzetten. Zorg er wel voor dat er logica in de Sims-wereld blijft: vervang bijvoorbeeld niet de logica voor het effect van de bewegingen van een speler op diens positie ook door een LLM. De effecten van de acties van de Sims op hun gevoelens en de omgeving zijn wel een goed voorbeeld van waar je eventueel een LLM voor zou kunnen gebruiken.
+🆕 Je kunt <a href="./Code/Notebook%20Hulpcode%20LLM%20Sims%20game.ipynb" target="_blank" rel="noopener">deze code</a>  gebruiken om mee te beginnen, maar dat hoeft niet.
+Waarschuwing: het is heel leuk om het spel er mooi uit te laten zien, maar dat is niet het doel van deze opdracht. Verlies jezelf niet in een mooie GUI.</li>
+</ul>
+<h2>Technische vereisten</h2>
+<p>De volgende technische vereisten zijn van toepassing op de opdracht om de technieken uit de afgelopen weken zoveel mogelijk toe te passen:</p>
+<ul>
+<li>Het gebruik van LangGraph ligt hier voor de hand, maar is niet verplicht. Gebruik tenminste LangChain, of dus LangGraph, of een ander framework om de LLM's aan te sturen (controleer dit framework wel eerst bij de docent).</li>
+<li>Probeer de applicatie zoveel mogelijk te bouwen in het framework van LangChain/LangGraph/etc. Gebruik dus Output Parsers, Prompt Templates, Agents, Memory, Chains, etc, waar dat zinvol is.</li>
+<li>📚 RAG passen we toe in de applicatie door informatie over verschillende Sims werelden op te halen. Je kunt beschrijvingen van Sims werelden genereren, maar je kunt als je dat wilt ook bestaande informatiebronnen gebruiken of delen zelf bedenken. Natuulijk kunnen delen van deze informatiebronnen gestructureerd zijn, maar het is belangrijk dat het totaal van informatiebronnen voor een Sims-wereld ongestructureerd is.</li>
+<li>⚖️ Het spel is bedoeld voor kinderen vanaf 8 jaar. Denk dus goed na over de taal, de acties en de objecten die je gebruikt. Wat is ethisch verantwoord?
+NB: Neurosymbolic AI is een techniek die we in de lessen hebben behandeld, maar niet terugkomt in de opdracht.</li>
+</ul>
+<h2>Beoordeling</h2>
+<p>De onderstaande tabel wordt gebruikt bij de beoordeling van het assessment.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Categorie</strong></th>
+<th><strong>Onvoldoende (0%)</strong></th>
+<th><strong>Voldoende (60%)</strong></th>
+<th><strong>Goed (100%)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LangChain (30p)</strong></td>
+<td>LangChain/LangGraph is niet correct ingezet. Handige functies zijn niet gebruikt. Code is (daardoor) onsamenhangend en moeilijk te volgen.</td>
+<td>Basiscomponenten zoals chains, memory of prompt templates worden juist toegepast. Structuur van de code is logisch en LangChain/LangGraph is effectief ingezet om logica te scheiden.</td>
+<td>Volledig gebruik van relevante componenten zoals agents, memory, tools en custom chains. Toepassing is modulair en schaalbaar, met goed gestructureerde prompt flows en agents</td>
+</tr>
+<tr>
+<td>---</td>
+<td>---</td>
+<td>---</td>
+<td>---</td>
+</tr>
+<tr>
+<td><strong>API (20p)</strong></td>
+<td>De API-aanroep voegt weinig toe aan het spel, of werkt helemaal niet.</td>
+<td>De API heeft zinvolle invloed op gedrag van Sims of spelverloop. API-aanroep is correct geïmplementeerd.</td>
+<td>De API is creatief gekozen en zinvol geïntegreerd in de gameplay. API-aanroep is goed geïntegreerd met de LLM-besluitvorming.</td>
+</tr>
+<tr>
+<td><strong>Gebruik van RAG (25p)</strong></td>
+<td>Er is geen of onjuist gebruik van RAG. De toegevoegde context veranderd de besluitvorming nauwelijks.</td>
+<td>De simulatie maakt gebruik van relevante opgehaalde context voor beslissingen.</td>
+<td>RAG is goed opgezet met contextgeneratie vanuit gestructuureerde en ongestructureerde bronnen. Er zijn technieken toegepast om de pre-retrieval en post-retrieval stappen te optimaliseren.</td>
+</tr>
+<tr>
+<td><strong>Bias en ethiek (25p)</strong></td>
+<td>Er is geen aandacht voor mogelijke bias, stereotypering of ongeschikte content. De taal en acties zijn ongeschikt voor de doelgroep.</td>
+<td>Er is nagedacht over bias en ongewenst gedrag van LLM's wordt deels voorkomen. Spel is grotendeels kindvriendelijk en cultureel neutraal.</td>
+<td>Ethiek is integraal meegenomen in ontwerp. Spel is expliciet ontworpen voor kinderen, met zorg voor taalgebruik en moraal.</td>
+</tr>
+</tbody></table>
+    </div>
+    <div class="col-12">
+     <footer>
+      <p>
+       <img alt="logo" class="img-fluid" src="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/img/logo.svg"/>
+      </p>
+     </footer>
+    </div>
+   </div>
+  </div>
+  <script src="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/thirdpartylib/jquery/jquery-3.4.1.min.js">
+  </script>
+  <script src="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/thirdpartylib/popper-js/popper.min.js">
+  </script>
+  <script src="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/thirdpartylib/bootstrap-4.3.1/js/bootstrap.min.js">
+  </script>
+  <script src="/shared/LCS_HTML_Templates/HHS_Template_2021/_assets/js/scripts.min.js">
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js">
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js">
+  </script>
+ </body>
+</html>

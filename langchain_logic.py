@@ -4,6 +4,7 @@ import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_ollama import ChatOllama
 
 # load_dotenv()
 # GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -36,11 +37,16 @@ actie_prompt = ChatPromptTemplate.from_messages([
      "Geef alleen dat ene woord terug, verder niets.")
 ])
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-      google_api_key=GOOGLE_API_KEY,
-        temperature=0.5
-        )
+# llm = ChatGoogleGenerativeAI(
+#     model="gemini-2.5-flash",
+#       google_api_key=GOOGLE_API_KEY,
+#         temperature=0.5
+#         )
+
+llm = ChatOllama(
+    model="llama3.2",
+    temperature=0
+)
 
 kies_actie_chain = actie_prompt | llm | StrOutputParser()
 

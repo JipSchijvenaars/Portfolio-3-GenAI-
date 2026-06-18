@@ -83,12 +83,14 @@ class SimBeslissing(BaseModel):
     gebruikt_rag: bool = Field(description="Of de beslissing aantoonbaar context uit RAG gebruikt")
 
 
+# from langchain.memory import ConversationBufferWindowMemory
+
 @dataclass
 class SimMemory:
     """Eenvoudige per-Sim memorylaag.
 
-    Bewust klein gehouden zodat de game snel blijft. Dit telt als memory-component:
-    vorige ervaringen worden opnieuw aan de prompt meegegeven.
+    De laatste gebeurtenissen per Sim worden opgeslagen en opnieuw
+    meegegeven aan de LangChain-prompt.
     """
 
     max_items: int = 5
@@ -96,7 +98,7 @@ class SimMemory:
 
     def voeg_toe(self, naam: str, gebeurtenis: str) -> None:
         self.gebeurtenissen.setdefault(naam, []).append(gebeurtenis)
-        self.gebeurtenissen[naam] = self.gebeurtenissen[naam][-self.max_items :]
+        self.gebeurtenissen[naam] = self.gebeurtenissen[naam][-self.max_items:]
 
     def geef_context(self, naam: str) -> str:
         items = self.gebeurtenissen.get(naam, [])
@@ -106,6 +108,17 @@ class SimMemory:
 
 
 memory = SimMemory(max_items=5)
+
+
+def voeg_memory_toe(naam: str, input_text: str, output_text: str) -> None:
+    """Slaat een gebeurtenis op in de eigen per-Sim memorylaag."""
+    gebeurtenis = f"{input_text} -> {output_text}"
+    memory.voeg_toe(naam, gebeurtenis)
+
+
+def geef_memory_context(naam: str) -> str:
+    """Haalt de opgeslagen herinneringen van een Sim op voor de prompt."""
+    return memory.geef_context(naam)
 
 
 @tool
@@ -199,6 +212,17 @@ def _haal_rag_context(input_data: SimInput) -> Dict[str, str]:
         "karakter_context": karakter_context,
     }
 
+def _lege_rag_context(input_data: SimInput) -> Dict[str, str]:
+    """Fallback-context wanneer RAG bewust is uitgeschakeld.
+
+    Hierdoor kan de LangChain-beslislaag ook zonder RAG draaien.
+    Dat maakt het LangChain-onderdeel zelfstandig beoordeelbaar.
+    """
+    return {
+        "rag_zoekvraag": "RAG is uitgeschakeld voor deze LangChain-run.",
+        "wereld_context": "Geen wereldcontext gebruikt.",
+        "karakter_context": "Geen karaktercontext gebruikt.",
+    }
 
 rag_context_chain = RunnableLambda(_haal_rag_context)
 
@@ -258,6 +282,34 @@ beslis_chain = (
     | parser
 )
 
+def _maak_beslis_chain(gebruik_rag: bool):
+    """Maakt de beslis-chain met of zonder RAG-context."""
+    gekozen_rag_chain = rag_context_chain if gebruik_rag else RunnableLambda(_lege_rag_context)
+
+    return (
+        RunnableParallel(
+            basis=RunnablePassthrough(),
+            rag=gekozen_rag_chain,
+        )
+        | RunnableLambda(_maak_prompt_input)
+        | beslis_prompt
+        | llm
+        | parser
+    )
+
+class SimDecisionAgent:
+    """Agent-achtige LangChain-beslislaag voor één Sim.
+
+    Deze class orkestreert tools, memory, prompt templates,
+    LLM-output parsing, optionele RAG-context en validatie.
+    De GUI gebruikt alleen deze agent en hoeft de interne LangChain-flow niet te kennen.
+    """
+
+    def invoke(self, input_data: SimInput, gebruik_rag: bool = False) -> SimBeslissing:
+        chain = _maak_beslis_chain(gebruik_rag=gebruik_rag)
+        return chain.invoke(input_data)
+
+sim_decision_agent = SimDecisionAgent()
 
 def _fallback_beslissing(sim: Dict, objecten_nabij: List[str]) -> SimBeslissing:
     """Deterministische fallback als de LLM/RAG tijdelijk faalt."""
@@ -283,6 +335,7 @@ def kies_actie_voor_sim_dict(
     objecten_nabij: List[str],
     tijdperk: str = "prehistorie",
     instructie: str = "geen",
+    gebruik_rag: bool = False,
     debug: bool = False,
 ) -> Dict | str:
     """Hoofdfunctie voor de game.
@@ -300,11 +353,11 @@ def kies_actie_voor_sim_dict(
         "objecten_nabij": ", ".join(objecten_nabij),
         "instructie": veilige_instructie,
         "tijdperk": tijdperk,
-        "herinneringen": memory.geef_context(sim["naam"]),
+        "herinneringen": geef_memory_context(sim["naam"]),
     }
 
     try:
-        beslissing = beslis_chain.invoke(input_data)
+        beslissing = sim_decision_agent.invoke(input_data, gebruik_rag=gebruik_rag)
         actie = valideer_kindvriendelijke_actie.invoke(beslissing.actie)
         beslissing.actie = actie  # type: ignore[assignment]
     except Exception as exc:
@@ -319,9 +372,10 @@ def kies_actie_voor_sim_dict(
                 "fallback": True,
             }
 
-    memory.voeg_toe(
+    voeg_memory_toe(
         sim["naam"],
-        f"Koos actie '{beslissing.actie}' omdat: {beslissing.reden}",
+        input_text=f"Situatie: {sim['stemming']}, honger {sim['honger']}, objecten nabij: {objecten_nabij}",
+        output_text=f"Koos actie '{beslissing.actie}' omdat: {beslissing.reden}",
     )
 
     if debug:
@@ -331,5 +385,8 @@ def kies_actie_voor_sim_dict(
 
 
 def registreer_resultaat(naam: str, gebeurtenis: str) -> None:
-    """Kan na het uitvoeren van een actie worden aangeroepen om memory bij te werken."""
-    memory.voeg_toe(naam, gebeurtenis)
+    voeg_memory_toe(
+        naam,
+        input_text="Resultaat na uitgevoerde actie",
+        output_text=gebeurtenis,
+    )

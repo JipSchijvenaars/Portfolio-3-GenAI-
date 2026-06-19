@@ -1,0 +1,111 @@
+from __future__ import annotations
+
+from typing import Literal, Dict
+from pydantic import BaseModel, Field
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_ollama import ChatOllama
+
+
+# Probeer memoryfunctie uit je bestaande LangChain-bestand te importeren
+try:
+    from langchain_logic_100 import registreer_resultaat
+except Exception:
+    registreer_resultaat = None
+
+
+NieuwsEmotie = Literal[
+    "blij",
+    "verdrietig",
+    "bezorgd",
+    "enthousiast",
+    "rustig",
+    "nieuwsgierig"
+]
+
+
+class NieuwsImpact(BaseModel):
+    emotie: NieuwsEmotie = Field(
+        description="De kindvriendelijke emotie die het nieuws oproept"
+    )
+    intensiteit: int = Field(
+        description="Hoe sterk de emotie is, van 1 tot 5"
+    )
+    kindvriendelijke_samenvatting: str = Field(
+        description="Zeer algemene, veilige samenvatting zonder heftige details"
+    )
+
+
+llm = ChatOllama(model="llama3.2", temperature=0)
+
+nieuws_parser = PydanticOutputParser(pydantic_object=NieuwsImpact)
+
+nieuws_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Je analyseert nieuws voor een kindvriendelijke dorpssimulatie. "
+            "Geef nooit heftige details door zoals geweld, dood, misdaad, oorlog, rampen of volwassen thema's. "
+            "Vertaal het nieuws alleen naar een algemene emotie en een veilige, abstracte samenvatting. "
+            "De dorpsbewoners mogen alleen de emotionele lading ervaren, niet het letterlijke nieuws.\n\n"
+            "{format_instructions}"
+        ),
+        (
+            "human",
+            "Nieuwsbericht:\n{nieuws_text}\n\n"
+            "Bepaal de emotie, intensiteit en veilige samenvatting."
+        ),
+    ]
+)
+
+nieuws_chain = nieuws_prompt | llm | nieuws_parser
+
+
+def breng_nieuws_naar_dorp(
+    nieuws_text: str,
+    ontvanger: Dict,
+) -> Dict:
+    """
+    Eén dorpsbewoner ontvangt nieuws van buiten het dorp.
+    Het letterlijke nieuws wordt niet verspreid; alleen de emotie.
+    """
+
+    impact = nieuws_chain.invoke(
+        {
+            "nieuws_text": nieuws_text,
+            "format_instructions": nieuws_parser.get_format_instructions(),
+        }
+    )
+
+    ontvanger["stemming"] = impact.emotie
+
+    if registreer_resultaat is not None:
+        registreer_resultaat(
+            ontvanger["naam"],
+            f"{ontvanger['naam']} hoorde nieuws van buiten het dorp en voelde zich {impact.emotie}."
+        )
+
+    return {
+        "ontvanger": ontvanger["naam"],
+        "emotie": impact.emotie,
+        "intensiteit": impact.intensiteit,
+        "kindvriendelijke_samenvatting": impact.kindvriendelijke_samenvatting,
+    }
+
+
+def deel_nieuws_emotie(
+    bron_sim: Dict,
+    doel_sim: Dict,
+) -> None:
+    """
+    De bron-Sim deelt niet het letterlijke nieuws, maar alleen de emotie.
+    """
+
+    doel_sim["stemming"] = bron_sim["stemming"]
+
+    if registreer_resultaat is not None:
+        registreer_resultaat(
+            doel_sim["naam"],
+            f"{doel_sim['naam']} sprak met {bron_sim['naam']} en voelde zich daarna {doel_sim['stemming']}."
+        )

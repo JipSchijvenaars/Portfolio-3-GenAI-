@@ -1,4 +1,4 @@
-"""
+""" 
 Ethische beslissingslaag voor de Sims-wereld.
 
 Dit bestand helpt Sims om positieve en kindvriendelijke keuzes

@@ -13,10 +13,16 @@ VERBODEN_WOORDEN = [
     "dood",
     "kill",
     "haat",
+    "scheld",
     "schelden",
+    "uitscheld",
+    "uitschelden",
+    "beledig",
+    "beledigen",
     "dom",
     "stom",
     "geweld",
+    "pest",
     "pesten",
     "discriminatie",
     "racisme",
@@ -32,6 +38,9 @@ VERVANGINGEN = {
     "dom": "onhandig",
     "stom": "niet leuk",
     "pesten": "vriendelijk praten",
+    "schelden": "rustig praten",
+    "uitschelden": "rustig praten",
+    "beledigen": "rustig praten",
 }
 
 

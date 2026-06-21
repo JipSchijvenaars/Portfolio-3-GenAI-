@@ -7,6 +7,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_ollama import ChatOllama
 
+import os
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+
 
 # Probeer memoryfunctie uit je bestaande LangChain-bestand te importeren
 try:
@@ -109,3 +117,100 @@ def deel_nieuws_emotie(
             doel_sim["naam"],
             f"{doel_sim['naam']} sprak met {bron_sim['naam']} en voelde zich daarna {doel_sim['stemming']}."
         )
+
+def haal_nieuws_op(query="ruimtevaart"):
+    import os
+    import requests
+
+    api_key = os.getenv("NEWS_API_KEY")
+
+    if not api_key:
+        return "Geen NEWS_API_KEY gevonden. Controleer je .env bestand."
+
+    url = "https://newsapi.org/v2/everything"
+
+    params = {
+        "q": query,
+        "language": "nl",
+        "pageSize": 1,
+        "sortBy": "publishedAt",
+        "apiKey": api_key,
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+    except Exception as e:
+        return f"Nieuws ophalen mislukt: {e}"
+
+    data = response.json()
+    artikelen = data.get("articles", [])
+
+    if not artikelen:
+        return "Geen nieuws gevonden."
+
+    artikel = artikelen[0]
+
+    titel = artikel.get("title", "")
+    beschrijving = artikel.get("description", "")
+
+    return f"{titel}. {beschrijving}"
+
+def bepaal_dorpsemotie_uit_nieuws(nieuws_tekst):
+    """
+    Zet een nieuwsbericht om naar alleen een veilige dorpsemotie.
+    Het nieuws zelf wordt niet gedeeld met het dorp.
+    """
+
+    try:
+        from langchain_ollama import ChatOllama
+        from langchain_core.prompts import ChatPromptTemplate
+        from langchain_core.output_parsers import StrOutputParser
+
+        prompt = ChatPromptTemplate.from_template("""
+Je bent een neutrale nieuwsduider voor een kindvriendelijke Sims-wereld.
+
+Lees het nieuwsbericht, maar herhaal geen details uit het nieuws.
+Bepaal alleen welke algemene emotie het dorp hiervan krijgt.
+
+Kies precies één emotie uit deze lijst:
+- blij
+- nieuwsgierig
+- bezorgd
+- rustig
+- verdrietig
+- hoopvol
+
+Regels:
+- Geef alleen het ene emotiewoord terug.
+- Geen uitleg.
+- Geen nieuwsdetails.
+- Geen politieke of gewelddadige details.
+- Houd het geschikt voor kinderen vanaf 8 jaar.
+
+Nieuwsbericht:
+{nieuws}
+""")
+
+        llm = ChatOllama(model="llama3.2", temperature=0.2)
+
+        chain = prompt | llm | StrOutputParser()
+
+        emotie = chain.invoke({"nieuws": nieuws_tekst}).strip().lower()
+
+        toegestane_emoties = [
+            "blij",
+            "nieuwsgierig",
+            "bezorgd",
+            "rustig",
+            "verdrietig",
+            "hoopvol",
+        ]
+
+        if emotie not in toegestane_emoties:
+            return "nieuwsgierig"
+
+        return emotie
+
+    except Exception:
+        return "nieuwsgierig"

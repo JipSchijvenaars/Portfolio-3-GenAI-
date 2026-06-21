@@ -39,6 +39,8 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
 
+from typing import Literal
+
 # Eigen LangChain-tools uit je RAG-module.
 # Deze tools gebruiken de wereldbestanden en karakterbestanden.
 try:
@@ -74,16 +76,25 @@ class SimInput(TypedDict):
     herinneringen: str
 
 
+Emotie = Literal[
+    "blij",
+    "rustig",
+    "nieuwsgierig",
+    "verdrietig",
+    "bezorgd",
+    "moe",
+    "hongerig",
+    "neutraal"
+]
+
 class SimBeslissing(BaseModel):
     """Gestructureerde output van de LLM."""
 
     actie: Actie = Field(description="Exact een van: beweeg, eet, rust, praat")
     reden: str = Field(description="Korte kindvriendelijke reden voor deze actie")
-    emotie: str = Field(description="Korte beschrijving van de huidige emotie")
+    emotie: Emotie = Field(description="Exact een van: blij, rustig, nieuwsgierig, verdrietig, bezorgd, moe, hongerig, neutraal")
     gebruikt_rag: bool = Field(description="Of de beslissing aantoonbaar context uit RAG gebruikt")
 
-
-# from langchain.memory import ConversationBufferWindowMemory
 
 @dataclass
 class SimMemory:

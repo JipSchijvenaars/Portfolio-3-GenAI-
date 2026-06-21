@@ -13,34 +13,50 @@ embeddings_model = OllamaEmbeddings(model="nomic-embed-text")
 def vraag_tijdreis_kennisbank(tijdperk: str, zoekvraag: str) -> str:
     """
     Doorzoekt de historische en toekomstige database van het tijdreis-dorp.
-    Gebruik deze tool als je specifieke informatie nodig hebt over de cultuur, 
-    regels, kleding, omgangsvormen of objecten van de 'prehistorie' of 'toekomst'.
-    
-    Args:
-        tijdperk (str): Moet exact 'prehistorie' of 'toekomst' zijn.
-        zoekvraag (str): De specifieke vraag of situatie waar je context bij zoekt.
-    Returns:
-        str: De relevante context uit de documenten.
+    Simpele RAG-versie zonder FAISS, zodat het stabiel werkt in het notebook.
     """
     bestandsnaam = f"werelden/{tijdperk.lower()}.txt"
+
     if not os.path.exists(bestandsnaam):
         return f"Fout: Het tijdperk '{tijdperk}' is onbekend of het bestand '{bestandsnaam}' ontbreekt."
-        
+
     try:
-        loader = TextLoader(bestandsnaam)
-        documents = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=250, chunk_overlap=30)
-        chunks = text_splitter.split_documents(documents)
-        
-        vectorstore = FAISS.from_documents(chunks, embeddings_model)
-        relevante_docs = vectorstore.similarity_search(zoekvraag, k=2)
-        
-        if not relevante_docs:
-            return f"Er is in de database van de {tijdperk} niets gevonden over '{zoekvraag}'."
-            
-        context = "\n---\n".join([doc.page_content for doc in relevante_docs])
-        return f"Relevante informatie over de {tijdperk} voor de vraag '{zoekvraag}':\n\n{context}"
-        
+        with open(bestandsnaam, "r", encoding="utf-8") as f:
+            tekst = f.read()
+
+        # Simpele pre-retrieval: zoekvraag opschonen naar zoekwoorden
+        stopwoorden = {"de", "het", "een", "en", "of", "bij", "in", "op", "te", "is", "heeft", "zoekt"}
+        zoekwoorden = [
+            woord.lower().strip(".,!?")
+            for woord in zoekvraag.split()
+            if woord.lower().strip(".,!?") not in stopwoorden
+        ]
+
+        # Simpele chunking per zin
+        zinnen = [zin.strip() for zin in tekst.replace("\n", " ").split(".") if zin.strip()]
+
+        # Retrieval: score zinnen op overlap met zoekwoorden
+        gescoorde_zinnen = []
+        for zin in zinnen:
+            score = sum(1 for woord in zoekwoorden if woord in zin.lower())
+            if score > 0:
+                gescoorde_zinnen.append((score, zin))
+
+        gescoorde_zinnen.sort(reverse=True, key=lambda x: x[0])
+
+        # Post-retrieval: neem maximaal 2 relevantste zinnen
+        relevante_zinnen = [zin for score, zin in gescoorde_zinnen[:2]]
+
+        if not relevante_zinnen:
+            relevante_zinnen = zinnen[:2]
+
+        context = ". ".join(relevante_zinnen)
+
+        return (
+            f"Relevante informatie over de {tijdperk} voor de vraag '{zoekvraag}':\n\n"
+            f"{context}."
+        )
+
     except Exception as e:
         return f"Er ging iets mis bij het doorzoeken van de lokale RAG: {str(e)}"
 
@@ -48,33 +64,43 @@ def vraag_tijdreis_kennisbank(tijdperk: str, zoekvraag: str) -> str:
 @tool
 def vraag_karakter_biografie(naam: str, zoekvraag: str) -> str:
     """
-    NIEUW: Doorzoekt de persoonlijke achtergrond, biografie en specifieke karaktertrekken van de bewoners.
-    Gebruik deze tool ALTIJD als je wilt weten hoe een specifieke Sim (zoals Emma, Lars, Fatima, Daan of Sofia)
-    in elkaar steekt, wat hun achtergrond is, of hoe zij reageren op situaties.
-    
-    Args:
-        naam (str): De naam van de bewoner (bijv. 'Lars', 'Emma', 'Fatima', 'Daan', 'Sofia').
-        zoekvraag (str): De specifieke vraag over het gedrag of de eigenschappen van dit karakter.
-    Returns:
-        str: De relevante biografie-details.
+    Doorzoekt de persoonlijke achtergrond, biografie en specifieke karaktertrekken van de bewoners.
+    Simpele RAG-versie zonder FAISS.
     """
     bestandsnaam = f"karakters/{naam.lower()}.txt"
+
     if not os.path.exists(bestandsnaam):
         return f"Fout: Er is geen karakter-bestand gevonden voor '{naam}'."
-        
+
     try:
-        loader = TextLoader(bestandsnaam)
-        documents = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=150, chunk_overlap=20)
-        chunks = text_splitter.split_documents(documents)
-        
-        vectorstore = FAISS.from_documents(chunks, embeddings_model)
-        relevante_docs = vectorstore.similarity_search(zoekvraag, k=1)
-        
-        if not relevante_docs:
-            return f"Geen specifieke karakterdetails gevonden voor {naam} over '{zoekvraag}'."
-            
-        return f"Persoonlijke achtergrond van {naam}:\n\n{relevante_docs[0].page_content}"
-        
+        with open(bestandsnaam, "r", encoding="utf-8") as f:
+            tekst = f.read()
+
+        stopwoorden = {"de", "het", "een", "en", "of", "bij", "in", "op", "te", "is", "heeft", "zoekt"}
+        zoekwoorden = [
+            woord.lower().strip(".,!?")
+            for woord in zoekvraag.split()
+            if woord.lower().strip(".,!?") not in stopwoorden
+        ]
+
+        zinnen = [zin.strip() for zin in tekst.replace("\n", " ").split(".") if zin.strip()]
+
+        gescoorde_zinnen = []
+        for zin in zinnen:
+            score = sum(1 for woord in zoekwoorden if woord in zin.lower())
+            if score > 0:
+                gescoorde_zinnen.append((score, zin))
+
+        gescoorde_zinnen.sort(reverse=True, key=lambda x: x[0])
+
+        relevante_zinnen = [zin for score, zin in gescoorde_zinnen[:2]]
+
+        if not relevante_zinnen:
+            relevante_zinnen = zinnen[:2]
+
+        context = ". ".join(relevante_zinnen)
+
+        return f"Persoonlijke achtergrond van {naam}:\n\n{context}."
+
     except Exception as e:
         return f"Er ging iets mis bij het doorzoeken van de karakter-RAG: {str(e)}"
